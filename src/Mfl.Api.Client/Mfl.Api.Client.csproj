@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup Label="Globals">
+    <WebView2DispatchAdapterNamespace>Mfl.Api.Client</WebView2DispatchAdapterNamespace>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>Mfl.Api</RootNamespace>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
+    <UseWinUI>true</UseWinUI>
+    <WinUISDKReferences>false</WinUISDKReferences>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+<PackageId>Mfl.Api.Client</PackageId>
+<Version>1.0.0</Version>
+<Authors>William Kramer</Authors>
+<Description>A modern, async-friendly .NET client for the MyFantasyLeague (MFL) fantasy football API.</Description>
+<PackageProjectUrl>https://github.com/wpkramer/mfl-api-client</PackageProjectUrl>
+<RepositoryUrl>https://github.com/wpkramer/mfl-api-client</RepositoryUrl>
+<PackageTags>mfl;myfantasyleague;fantasy-football;api;client</PackageTags>
+<PackageLicenseExpression>MIT</PackageLicenseExpression>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7175" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.251106002" />
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Mfl.Api.Client.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+  
+</Project>
