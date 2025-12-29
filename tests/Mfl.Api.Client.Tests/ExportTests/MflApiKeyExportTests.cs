@@ -1,4 +1,5 @@
 
+using Windows.Media.Protection.PlayReady;
 using Xunit.Sdk;
 
 namespace Mfl.Api.Client.Tests.ExportTests;
@@ -28,6 +29,21 @@ public class MflApiKeyExportTests
         // Assert
         Assert.True(leagueResult.IsSuccess, $"GetLeagueAsync failed: {leagueResult.Message}");
         Assert.NotNull(leagueResult.Value);
+    }
+
+    [Fact]
+    public async Task GetPlayerUpdatesWithKey()
+    {
+        using var client = new MflApiClient(TestSeason);
+        client.ApiKey = _apiKey;
+        // Act
+        var playersResult = await client.GetPlayerUpdatesAsync(since: DateTime.UtcNow.AddDays(-7), _leagueId);
+        // Assert
+        Assert.True(playersResult.IsSuccess, $"GetPlayersAsync failed: {playersResult.Message}");
+        Assert.NotNull(playersResult.Value);
+        Assert.NotEmpty(playersResult.Value);
+        var playersList = playersResult.Value;
+        Assert.True(playersList[0].Name.Length > 0, "First player's name is empty");
     }
 
 

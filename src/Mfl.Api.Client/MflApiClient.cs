@@ -415,7 +415,7 @@ public sealed partial class MflApiClient : IDisposable
             ThrowIfDisposed();
             ThrowIfNotValidated();
             int unixTimestamp = (int)(since.ToUniversalTime() - new DateTime(1970, 1, 1)).TotalSeconds;
-            string requestUri = GetExportUrl($"TYPE=players&L={leagueId}&APIKEY=&DETAILS=1&SINCE={unixTimestamp}&JSON=1");
+            string requestUri = GetExportUrl($"TYPE=players&L={leagueId}&DETAILS=1&SINCE={unixTimestamp}&JSON=1");
             HttpResponseMessage response = await SendThrottledGetAsync(requestUri);
             string responseBody = await response.Content.ReadAsStringAsync();
             var root = JsonSerializer.Deserialize<mflPlayer.MflPlayersRoot>(responseBody, _jsonSerializerOptions);
@@ -425,9 +425,67 @@ public sealed partial class MflApiClient : IDisposable
             }
             return Result<List<mflPlayer.MflPlayer>>.Success(root.Players.PlayerList);
         }
+        catch (HttpRequestException httpEx)
+        {
+            return Result<List<mflPlayer.MflPlayer>>.Failure("Network error fetching players.", httpEx);
+        }
+        catch (JsonException jsonEx)
+        {
+            return Result<List<mflPlayer.MflPlayer>>.Failure("Failed to parse JSON response.", jsonEx);
+        }
         catch (Exception ex)
         {
-            return Result<List<mflPlayer.MflPlayer>>.Failure("Error fetching player data.", ex);
+            return Result<List<mflPlayer.MflPlayer>>.Failure("Unexpected error fetching player data.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Retrieves the full player list from MFL. 
+    /// Use sparingly — this is a large response (~1,500–2,000 players).
+    /// Prefer GetPlayerUpdatesAsync(since) for incremental updates after initial load.
+    /// </summary>
+    /// <param name="leagueId">Your MFL league ID (required for authenticated access to DETAILS=1)</param>
+    /// <returns>Result containing the full list of players</returns>
+    public async Task<Result<List<mflPlayer.MflPlayer>>> GetFullPlayerListAsync(string leagueId)
+    {
+        if (string.IsNullOrWhiteSpace(leagueId))
+            throw new ArgumentException("League ID is required for full player export.", nameof(leagueId));
+
+        try
+        {
+            ThrowIfDisposed();
+            ThrowIfNotValidated(); // Ensures login/cookies are valid
+
+            // DETAILS=1 adds extra fields (status, nflId, etc.) — very useful!
+            string requestUri = GetExportUrl($"TYPE=players&L={leagueId}&DETAILS=1&JSON=1");
+
+            HttpResponseMessage response = await SendThrottledGetAsync(requestUri);
+            response.EnsureSuccessStatusCode(); // Throws if not 2xx
+
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            var root = JsonSerializer.Deserialize<mflPlayer.MflPlayersRoot>(
+                responseBody,
+                _jsonSerializerOptions);
+
+            if (root?.Players?.PlayerList == null)
+            {
+                return Result<List<mflPlayer.MflPlayer>>.Failure("Empty or invalid player data in response.");
+            }
+
+            return Result<List<mflPlayer.MflPlayer>>.Success(root.Players.PlayerList);
+        }
+        catch (HttpRequestException httpEx)
+        {
+            return Result<List<mflPlayer.MflPlayer>>.Failure("Network error fetching players.", httpEx);
+        }
+        catch (JsonException jsonEx)
+        {
+            return Result<List<mflPlayer.MflPlayer>>.Failure("Failed to parse JSON response.", jsonEx);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<mflPlayer.MflPlayer>>.Failure("Unexpected error fetching full player list.", ex);
         }
     }
 
@@ -474,45 +532,7 @@ public sealed partial class MflApiClient : IDisposable
             return Result<List<mflAdp.MflAdpPlayer>>.Failure("Error fetching ADP data.", ex);
         }
     }
-    /*
-        public async Task<Result<List<NFLSched.NflSchedule>>> GetNflScheduleAsync(int week = 0)
-        {
-            try
-            {
-                ThrowIfDisposed();
-                // Public endpoint — no auth needed
-                string weekParam;
-                if(week > 0)
-                {
-                    weekParam = $"{week}";
-                    string requestWeekUri = $"export?TYPE=nflSchedule&W={weekParam}&JSON=1";
-                    HttpResponseMessage weekResponse = await SendThrottledGetAsync(requestWeekUri);
-                    string weekbody = await weekResponse.Content.ReadAsStringAsync();
-                    var weekroot = JsonSerializer.Deserialize<NFLSched.NFLOneWeekRoot>(weekbody, _jsonSerializerOptions);
-                    if (weekroot == null) {
-                        return Result<List<NFLSched.NflSchedule>>.Failure("Failed to parse NFL schedule.");
-                    }
-                    List<NFLSched.NflSchedule> weekList =
-                    [
-                        weekroot.NflSchedule
-                    ];
-                    return Result<List<NFLSched.NflSchedule>>.Success(weekList);
-                }
 
-                string requestUri = $"export?TYPE=nflSchedule&W=ALL&JSON=1";
-                HttpResponseMessage response = await SendThrottledGetAsync(requestUri);
-                string body = await response.Content.ReadAsStringAsync();
-                var root = JsonSerializer.Deserialize<NFLSched.NFLAllWeeksRoot>(body, _jsonSerializerOptions);
-                return root == null
-                    ? Result<List<NFLSched.NflSchedule>>.Failure("Failed to parse NFL schedule.")
-                    : Result<List<NFLSched.NflSchedule>>.Success(root.FullNflSchedule.NflScheduleWeeks);
-            }
-            catch (Exception ex)
-            {
-                return Result<List<NFLSched.NflSchedule>>.Failure("Error fetching NFL schedule.", ex);
-            }
-        }
-    */
 
     /// <summary>
     /// Asynchronously retrieves the NFL schedule.
