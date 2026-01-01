@@ -115,6 +115,64 @@ public partial class DraftPrepExportTests : IDisposable
         Assert.True(scheduleList[0].Matchups[0].Teams.Count == 2, "Expected 2 teams in first matchup");
     }
 
+    [Fact]
+    public async Task GetLeagueRulesAsync_SimpleTest()
+    {
+        var result = await _client.GetLeagueRulesAsync(_leagueId);
+        Assert.True(result.IsSuccess);
+        Assert.NotNull(result.Value);
+        Assert.NotEmpty(result.Value);
+    }
+
+    [Fact]
+    public async Task GetLeagueRulesAsync_ReturnsSuccessWithPositionRuleGroups()
+    {
+        // Arrange - use a real, public MFL league ID known to have rules (or your own)
+        // Example: A well-known demo league or your personal league
+        string leagueId = _leagueId; // Ensure this is set in your test fixture to a valid league
+
+        // Act
+        var result = await _client.GetLeagueRulesAsync(leagueId);
+
+        // Assert - basic success
+        Assert.True(result.IsSuccess, result.Message ?? "No error message provided");
+        Assert.NotNull(result.Value);
+        Assert.NotEmpty(result.Value); // At least one PositionRuleGroup
+
+        // Assert - structure matches real MFL output
+        var groups = result.Value;
+
+        // There should be at least one group (often more)
+        Assert.True(groups.Count >= 1);
+
+        // Look for common patterns:
+        // - Some leagues have an empty group for a single position (e.g., QB with no bonuses)
+        // - Others have a shared group like "QB|RB|WR|TE|PK" with many rules
+        bool hasEmptyGroup = groups.Any(g => g.Rules.Count == 0);
+        bool hasSharedBonusGroup = groups.Any(g =>
+            g.Positions.Contains("|") && // multi-position
+            g.Rules.Count > 10);         // has bonuses
+
+        // At least one of these patterns should exist in real leagues
+        Assert.True(hasEmptyGroup || hasSharedBonusGroup,
+            "Expected either an empty rule group (standard scoring) or a shared bonus group.");
+
+        // Optional: Spot-check a known common rule if present
+        var bonusGroup = groups.FirstOrDefault(g => g.Rules.Count > 0);
+        if (bonusGroup != null)
+        {
+            // Example: Many leagues give bonus for 300+ passing yards
+            var longPassBonus = bonusGroup.Rules.FirstOrDefault(r =>
+                r.Event.Value == "PY" &&
+                r.Range.Value.Contains("300"));
+
+            if (longPassBonus != null)
+            {
+                Assert.Contains("10", longPassBonus.Points.Value); // typical 300-399 = +10
+            }
+        }
+    }
+
     public void Dispose()
     {
        _client.Dispose();

@@ -1,5 +1,6 @@
 ﻿using Mfl.Api.Common;
 using Mfl.Api.Model.NFL;
+using Mfl.Api.Model.Rules;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -9,6 +10,7 @@ using System.Xml.Linq;
 using mflAdp = Mfl.Api.Model.Adp;
 using mflLeague = Mfl.Api.Model.League;
 using mflPlayer = Mfl.Api.Model.Player;
+using mflRules = Mfl.Api.Model.Rules;
 using mflSched = Mfl.Api.Model.MflSchedule;
 using myLeague = Mfl.Api.Model.MyLeague;
 using NFLSched = Mfl.Api.Model.NFL;
@@ -399,6 +401,57 @@ public sealed partial class MflApiClient : IDisposable
             return Result<List<myLeague.MyLeague>>.Failure("Error fetching my leagues data.", ex);
         }
     }
+
+
+    /// <summary>
+    /// Scoring rules for a given league
+    /// </summary>
+    /// <param name="leagueId"></param>
+    public async Task<Result<List<PositionRuleGroup>>> GetLeagueRulesAsync(string leagueId)
+    {
+        try
+        {
+            ThrowIfDisposed();
+            ThrowIfNotValidated();
+
+            if (string.IsNullOrWhiteSpace(leagueId))
+            {
+                return Result<List<PositionRuleGroup>>.Failure("League ID is required.");
+            }
+
+            string requestUri = GetExportUrl($"TYPE=rules&L={leagueId}&JSON=1");
+
+            HttpResponseMessage response = await SendThrottledGetAsync(requestUri);
+
+            // Ensure success status before reading content
+            response.EnsureSuccessStatusCode();
+
+            string responseBody = await response.Content.ReadAsStringAsync();
+
+            var root = JsonSerializer.Deserialize<LeagueRulesRoot>(responseBody, _jsonSerializerOptions);
+
+            if (root?.Rules?.PositionRuleGroups == null)
+            {
+                return Result<List<PositionRuleGroup>>.Failure("Failed to parse league rules from response. Root or PositionRuleGroups was null.");
+            }
+
+            return Result<List<PositionRuleGroup>>.Success(root.Rules.PositionRuleGroups);
+        }
+        catch (HttpRequestException httpEx)
+        {
+            return Result<List<PositionRuleGroup>>.Failure($"Network error fetching league rules: {httpEx.Message}", httpEx);
+        }
+        catch (JsonException jsonEx)
+        {
+            return Result<List<PositionRuleGroup>>.Failure($"Failed to deserialize league rules JSON: {jsonEx.Message}", jsonEx);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<PositionRuleGroup>>.Failure("Unexpected error fetching league rules.", ex);
+        }
+    }
+
+
     /// <summary>
     /// Retrieves a list of player updates from the specified league that have occurred since the given date and time.
     /// </summary>
