@@ -632,12 +632,12 @@ public sealed partial class MflApiClient : IDisposable
             else
             {
                 var fullRoot = JsonSerializer.Deserialize<NFLSched.NFLAllWeeksRoot>(body, _jsonSerializerOptions);
-                if (fullRoot?.FullNflSchedule?.NflScheduleWeeks == null)
+                if (fullRoot?.FullNflSchedule?.NflSchedule == null)
                 {
                     return Result<List<NFLSched.NflSchedule>>.Failure("Failed to parse full NFL schedule.");
                 }
 
-                return Result<List<NFLSched.NflSchedule>>.Success(fullRoot.FullNflSchedule.NflScheduleWeeks);
+                return Result<List<NFLSched.NflSchedule>>.Success(fullRoot.FullNflSchedule.NflSchedule);
             }
         }
         catch (Exception ex)

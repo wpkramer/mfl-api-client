@@ -1,13 +1,60 @@
-﻿using System.Collections.Generic;
+﻿// grok, Just now there is trouble parsing using the NFLAllWeeks Root,
+// the data i am parsing is from https://api.myfantasyleague.com/2025/export?TYPE=nflSchedule&W=ALL&JSON=1
+// I think its the last week but haven't spotted the difference, can you assist.
+
+
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using System.Text.Json;
+using System;
 
 namespace Mfl.Api.Model.NFL;
 
-/*
- * This file contains classes representing the MyFantasyLeague NFL Schedule JSON structure.
- */
 
+public class MatchupConverter : JsonConverter<List<Matchup>>
+{
+    public override List<Matchup> Read(
+        ref Utf8JsonReader reader,
+        Type typeToConvert,
+        JsonSerializerOptions options)
+    {
+        var list = new List<Matchup>();
 
+        if (reader.TokenType == JsonTokenType.StartArray)
+        {
+            // Normal array case
+            while (reader.Read() && reader.TokenType != JsonTokenType.EndArray)
+            {
+                var matchup = JsonSerializer.Deserialize<Matchup>(ref reader, options);
+                if (matchup != null) list.Add(matchup);
+            }
+        }
+        else if (reader.TokenType == JsonTokenType.StartObject)
+        {
+            // Single object case → wrap in list
+            var single = JsonSerializer.Deserialize<Matchup>(ref reader, options);
+            if (single != null) list.Add(single);
+        }
+        else if (reader.TokenType == JsonTokenType.Null)
+        {
+            // Empty/no matchups → empty list
+        }
+        else
+        {
+            throw new JsonException($"Unexpected token type for matchup: {reader.TokenType}");
+        }
+
+        return list;
+    }
+
+    public override void Write(
+        Utf8JsonWriter writer,
+        List<Matchup> value,
+        JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, value, options);
+    }
+}
 
 public class NFLAllWeeksRoot
 {
@@ -15,7 +62,7 @@ public class NFLAllWeeksRoot
     public string Encoding { get; set; } = string.Empty;
 
     [JsonPropertyName("fullNflSchedule")]
-    public FullNflSchedule FullNflSchedule { get; set; } = new FullNflSchedule();
+    public FullNflSchedule FullNflSchedule { get; set; } = new ();
 
     [JsonPropertyName("version")]
     public string Version { get; set; } = string.Empty;
@@ -34,13 +81,14 @@ public class NFLOneWeekRoot
 public partial class FullNflSchedule
 {
     [JsonPropertyName("nflSchedule")]
-    public List<NflSchedule> NflScheduleWeeks { get; set; } = [];
+    public List<NflSchedule> NflSchedule { get; set; } = [];
 }
 
 
 public class NflSchedule
 {
     [JsonPropertyName("matchup")]
+    [JsonConverter(typeof(MatchupConverter))]
     public List<Matchup> Matchups { get; set; } = [];
 
     [JsonPropertyName("lastUpdate")]
