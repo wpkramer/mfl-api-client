@@ -100,6 +100,36 @@ public class MflPlayersJsonTests
             }
         }";
 
+    private const string OneKyrenWilliams = @"{
+  ""encoding"": ""utf-8"",
+  ""version"": ""1.0"",
+  ""players"": {
+    ""timestamp"": ""1769762223"",
+    ""since"": ""Wed Dec 31 7:00:00 p.m. ET 1969"",
+    ""player"": {
+      ""position"": ""RB"",
+      ""draft_round"": ""5"",
+      ""stats_global_id"": ""0"",
+      ""stats_id"": ""34120"",
+      ""height"": ""69"",
+      ""draft_pick"": ""21"",
+      ""id"": ""15710"",
+      ""birthdate"": ""967266000"",
+      ""college"": ""Notre Dame"",
+      ""espn_id"": ""4430737"",
+      ""weight"": ""202"",
+      ""jersey"": ""23"",
+      ""name"": ""Williams, Kyren"",
+      ""draft_team"": ""LAR"",
+      ""team"": ""LAR"",
+      ""rotowire_id"": ""15807"",
+      ""draft_year"": ""2022"",
+      ""cbs_id"": ""3121836"",
+      ""sportsdata_id"": ""19d44771-8f1d-4127-9b7d-230da137f15d""
+    }
+  }
+}";
+
     #endregion
 
     [Fact]
@@ -143,6 +173,23 @@ public class MflPlayersJsonTests
         Assert.True(player.IsFreeAgent);
         Assert.Equal(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero), player.BirthDate);
     }
+
+    [Fact]
+    public void Deserialize_SinglePlayer_RealExample()
+    {
+        var result = JsonSerializer.Deserialize<MflPlayersRoot>(OneKyrenWilliams, Options);
+
+        Assert.NotNull(result);
+        Assert.NotNull(result.Players);
+        Assert.Single(result.Players.PlayerList);
+
+        var player = result.Players.PlayerList[0];
+        Assert.Equal("15710", player.Id);
+        Assert.Equal("Williams, Kyren", player.Name);
+        Assert.Equal("LAR", player.Team);
+        Assert.False(player.IsRookie);
+    }
+
 
     [Fact]
     public void Deserialize_EmptyPlayers_ReturnsEmptyList()
