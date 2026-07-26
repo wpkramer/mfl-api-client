@@ -9,7 +9,7 @@ public partial class DraftPrepExportTests : IDisposable
     private readonly string _password;
     private readonly string _leagueId;
     private readonly MflApiClient _client;
-    private const int TestSeason = 2025;
+    private const int TestSeason = 2026;
 
     public DraftPrepExportTests()
     {
