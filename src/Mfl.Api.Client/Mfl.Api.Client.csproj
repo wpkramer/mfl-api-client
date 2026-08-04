@@ -27,5 +27,8 @@
       <_Parameter1>Mfl.Api.Client.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Model\PlayerRanks\" />
+  </ItemGroup>
   
 </Project>

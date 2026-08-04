@@ -1,5 +1,6 @@
 ﻿using Mfl.Api.Common;
 using Mfl.Api.Model.NFL;
+using Mfl.Api.Model.PlayerRanks;
 using Mfl.Api.Model.Rules;
 using System;
 using System.Collections.Generic;
@@ -539,6 +540,38 @@ public sealed partial class MflApiClient : IDisposable
         catch (Exception ex)
         {
             return Result<List<mflPlayer.MflPlayer>>.Failure("Unexpected error fetching full player list.", ex);
+        }
+    }
+
+    /// <summary>
+    /// Asynchronously retrieves player ranks for a specified position from the MFL API.
+    /// </summary>
+    /// <remarks>
+    /// This method fetches player ranks based on the provided position (e.g., "QB", "RB", "WR", etc.).
+    /// To get ranks for combo of WideReceivers and Tight Ends, use "WR+TE" as the position parameter. 
+    /// </remarks>
+    /// <param name="position"></param>
+    /// <returns></returns>
+    public async Task<Result<List<RankedPlayer>>> GetPlayerRanksAsync(string position)
+    {
+        try
+        {
+            ThrowIfDisposed();
+            ThrowIfNotValidated();
+            string encodedPosition = Uri.EscapeDataString(position);
+            string requestUri = GetExportUrl($"TYPE=playerRanks&POS={encodedPosition}&JSON=1");
+            HttpResponseMessage response = await SendThrottledGetAsync(requestUri);
+            string responseBody = await response.Content.ReadAsStringAsync();
+            var root = JsonSerializer.Deserialize<MflPlayerRanksRoot>(responseBody, _jsonSerializerOptions);
+            if (root == null)
+            {
+                return Result<List<RankedPlayer>>.Failure("Failed to parse player ranks data from response.");
+            }
+            return Result<List<RankedPlayer>>.Success(root.PlayerRanks.PlayerList);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<RankedPlayer>>.Failure("Error fetching player ranks.", ex);
         }
     }
 
