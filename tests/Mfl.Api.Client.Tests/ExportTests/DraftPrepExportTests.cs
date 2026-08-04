@@ -116,6 +116,24 @@ public partial class DraftPrepExportTests : IDisposable
         Assert.True(scheduleList[0].Matchups[0].Teams.Count == 2, "Expected 2 teams in first matchup");
     }
 
+    [Theory]
+    [InlineData("QB")]
+    [InlineData("RB")]
+    [InlineData("WR")]
+    [InlineData("TE")]
+    [InlineData("PK")]
+    [InlineData("WR+TE")]
+    public async Task GetPlayerRanksAsync(string position)
+    {
+        var ranksResult = await _client.GetPlayerRanksAsync(position);
+        Assert.True(ranksResult.IsSuccess, $"GetPlayerRanksAsync failed: {ranksResult.Message}");
+        Assert.NotNull(ranksResult.Value);
+        var ranksList = ranksResult.Value;
+        Assert.NotEmpty(ranksList);
+        // Position does not come back in the result, so we can't assert on it directly. But we can check that the first player's rank is a valid number.
+        Assert.True(int.TryParse(ranksList[0].Rank, out _), "First player's rank is not a valid number");
+    }
+
     [Fact]
     public async Task GetLeagueRulesAsync_SimpleTest()
     {

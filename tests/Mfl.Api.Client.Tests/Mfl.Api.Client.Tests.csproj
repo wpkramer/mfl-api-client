@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Mfl.Api.Client\Mfl.Api.Client.csproj" />
+    <ProjectReference Include="..\..\..\..\..\Users\wpkra\source\repos\mfl-api-client\src\Mfl.Api.Client\Mfl.Api.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>
