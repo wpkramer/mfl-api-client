@@ -575,6 +575,33 @@ public sealed partial class MflApiClient : IDisposable
         }
     }
 
+    public async Task<Result<List<Mfl.Api.Model.PlayerInjury.Injury>>> GetPlayerInjuriesAsync()
+    {
+        try
+        {
+            ThrowIfDisposed();
+            ThrowIfNotValidated();
+            string requestUri = GetExportUrl($"TYPE=injuries&JSON=1");
+            HttpResponseMessage response = await SendThrottledGetAsync(requestUri);
+            string responseBody = await response.Content.ReadAsStringAsync();
+            var root = JsonSerializer.Deserialize<Mfl.Api.Model.PlayerInjury.InjuriesRoot>(responseBody, _jsonSerializerOptions);
+            if (root == null)
+            {
+                return Result<List<Mfl.Api.Model.PlayerInjury.Injury>>.Failure("Failed to parse player injuries data from response.");
+            }
+            if(root.Injuries == null || root.Injuries.InjuryList == null)
+            {
+                // If there are no injuries, return an empty list instead of null
+                return Result<List<Mfl.Api.Model.PlayerInjury.Injury>>.Success(new List<Mfl.Api.Model.PlayerInjury.Injury>());
+            }
+            return Result<List<Mfl.Api.Model.PlayerInjury.Injury>>.Success(root.Injuries.InjuryList);
+        }
+        catch (Exception ex)
+        {
+            return Result<List<Mfl.Api.Model.PlayerInjury.Injury>>.Failure("Error fetching player injuries.", ex);
+        }
+    }
+
     /// <summary>
     /// Asynchronously retrieves average draft position (ADP) player data based on the specified league and draft
     /// settings.
@@ -603,7 +630,7 @@ public sealed partial class MflApiClient : IDisposable
         {
             ThrowIfDisposed();
             ThrowIfNotValidated();
-            string requestUri = GetExportUrl($"TYPE=adp&PERIOD={periodType}&FCOUNT={(int)franchiseCountType}&ISPPR={(int)scoringType}&ISKEEPER={keeperStatus}&IS_MOCK={(int)mockDraftType}&CUTOFF={cutoff}&DETAILS=0&JSON=1");
+            string requestUri = GetExportUrl($"TYPE=adp&PERIOD={periodType}&FCOUNT={(int)franchiseCountType}&IS_PPR={(int)scoringType}&IS_KEEPER={keeperStatus}&IS_MOCK={(int)mockDraftType}&CUTOFF={cutoff}&DETAILS=0&JSON=1");
             HttpResponseMessage response = await SendThrottledGetAsync(requestUri);
             string responseBody = await response.Content.ReadAsStringAsync();
             var root = JsonSerializer.Deserialize<mflAdp.MflAdpRoot>(responseBody, _jsonSerializerOptions);
