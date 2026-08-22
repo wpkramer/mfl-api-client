@@ -20,7 +20,8 @@ public enum FranchiseCountType
     ExactlyTen = 10,
     ExactlyTwelve = 12,
     ExactlyFourteen = 14,
-    SixteenOrMore = 16
+    SixteenOrMore = 16,
+    All = 0
 }
 
 /// <summary>
